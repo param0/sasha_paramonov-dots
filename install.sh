@@ -2,7 +2,8 @@
 
 [[ $EUID -eq 0 ]] && echo "Запускай без sudo." && exit 1
 
-DOTS_VERSION="1.0"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTS_VERSION="1.1"
 DOTS_VER_FILE="$HOME/.config/dots_version"
 
 sudo pacman -Sy --noconfirm --needed libnewt git base-devel rsync
@@ -73,15 +74,18 @@ install_pkgs() {
 apply_dots() {
     mkdir -p ~/.config ~/Pictures/Wallpapers
     
-    [[ -d ~/dots/config ]] && rsync -a ~/dots/config/ ~/.config/
-    [[ -f ~/dots/.zshrc ]] && cp ~/dots/.zshrc ~/
-    [[ -f ~/dots/.bashrc ]] && cp ~/dots/.bashrc ~/
-    [[ -f ~/dots/darkARTIX.png ]] && cp ~/dots/darkARTIX.png ~/Pictures/Wallpapers/
+    [[ -d "$DIR/config" ]] && rsync -a "$DIR/config/" ~/.config/
+    [[ -f "$DIR/.zshrc" ]] && cp "$DIR/.zshrc" ~/
+    [[ -f "$DIR/.bashrc" ]] && cp "$DIR/.bashrc" ~/
+    [[ -f "$DIR/darkARTIX.png" ]] && cp "$DIR/darkARTIX.png" ~/Pictures/Wallpapers/
     
     find ~/.config/hypr/scripts -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null
     
     echo "$DOTS_VERSION" > "$DOTS_VER_FILE"
-    sudo chsh -s $(which zsh) $USER
+    
+    if [[ "$SHELL" != *zsh* ]]; then
+        sudo chsh -s "$(which zsh)" "$USER"
+    fi
 }
 
 main_menu() {
