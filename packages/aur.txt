@@ -1,0 +1,13 @@
+amneziavpn-bin
+bottom-git
+dtrx
+glances-git
+hyprlauncher-git
+hyprtoolkit-git
+hyprwire-git
+matugen-bin
+obs-plugin-input-overlay-bin
+opencl-amd
+python-pywal16
+qogir-cursor-theme
+tg-ws-proxy-bin

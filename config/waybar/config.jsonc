@@ -1,0 +1,81 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 32,
+    "spacing": 2,
+    "reload_style_on_change": true,
+
+    "modules-left": [
+        "custom/logo",
+        "hyprland/workspaces",
+        "custom/power",
+        "custom/reboot",
+        "custom/logout"
+    ],
+    "modules-center": [
+        "clock"
+    ],
+    "modules-right": [
+        "pulseaudio",
+        "custom/mic",
+        "hyprland/language",
+        "tray"
+    ],
+
+    "custom/logo": {
+        "format": "",
+        "tooltip": false
+    },
+
+    "hyprland/workspaces": {
+        "disable-scroll": true,
+        "all-outputs": true,
+        "format": "{name}"
+    },
+
+    "custom/power": {
+        "format": "⏻",
+        "on-click": "systemctl poweroff",
+        "tooltip": false
+    },
+
+    "custom/reboot": {
+        "format": "",
+        "on-click": "systemctl reboot",
+        "tooltip": false
+    },
+
+    "custom/logout": {
+        "format": "󰗽",
+        "on-click": "hyprctl dispatch exit",
+        "tooltip": false
+    },
+
+    "clock": {
+        "interval": 1,
+        "format": "{:%H:%M:%S  %d.%m.%Y}",
+        "tooltip-format": "<tt><small>{calendar}</small></tt>"
+    },
+
+    "pulseaudio": {
+        "format": "VOL: {volume}%",
+        "format-muted": "VOL: 0%",
+        "on-click-right": "pavucontrol"
+    },
+
+    "custom/mic": {
+        "exec": "wpctl get-volume @DEFAULT_AUDIO_SOURCE@ | awk '{if ($3 == \"[MUTED]\") print \"MIC: MUTE\"; else print \"MIC: \" $2 * 100 \"%\"}'",
+        "interval": 1,
+        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
+        "format": "{}"
+    },
+
+    "hyprland/language": {
+        "format": "{short}",
+        "on-click": "hyprctl switchxkblayout all next"
+    },
+
+    "tray": {
+        "spacing": 5
+    }
+}
