@@ -2,9 +2,14 @@
 
 [[ $EUID -eq 0 ]] && echo "Запускай без sudo." && exit 1
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTS_VERSION="1.4"
+DOTS_DIR="$HOME/dots"
+DOTS_VERSION="1.5"
 DOTS_VER_FILE="$HOME/.config/dots_version"
+
+if [[ ! -d "$DOTS_DIR" ]]; then
+    echo "Директория $DOTS_DIR не найдена."
+    exit 1
+fi
 
 sudo pacman -Sy --noconfirm --needed libnewt git base-devel rsync
 
@@ -74,15 +79,13 @@ install_pkgs() {
 apply_dots() {
     mkdir -p ~/.config ~/Pictures/Wallpapers
     
-    [[ -f "$DIR/.zshrc" ]] && sed -i 's/echoti smkx.*/echoti smkx 2>\/dev\/null/g; s/echoti rmkx.*/echoti rmkx 2>\/dev\/null/g' "$DIR/.zshrc"
-
-    if [[ -d "$DIR/config" ]]; then
-        rsync -a "$DIR/config/" ~/.config/
+    if [[ -d "$DOTS_DIR/config" ]]; then
+        cp -af "$DOTS_DIR/config/." ~/.config/
     fi
     
-    [[ -f "$DIR/.zshrc" ]] && cp "$DIR/.zshrc" ~/
-    [[ -f "$DIR/.bashrc" ]] && cp "$DIR/.bashrc" ~/
-    [[ -f "$DIR/darkARTIX.png" ]] && cp "$DIR/darkARTIX.png" ~/Pictures/Wallpapers/
+    [[ -f "$DOTS_DIR/.zshrc" ]] && cp -f "$DOTS_DIR/.zshrc" ~/
+    [[ -f "$DOTS_DIR/.bashrc" ]] && cp -f "$DOTS_DIR/.bashrc" ~/
+    [[ -f "$DOTS_DIR/darkARTIX.png" ]] && cp -f "$DOTS_DIR/darkARTIX.png" ~/Pictures/Wallpapers/
     
     find ~/.config/hypr/scripts -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null
     
