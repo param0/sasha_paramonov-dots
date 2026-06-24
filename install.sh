@@ -3,7 +3,7 @@
 [[ $EUID -eq 0 ]] && echo "Запускай без sudo." && exit 1
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTS_VERSION="1.3"
+DOTS_VERSION="1.4"
 DOTS_VER_FILE="$HOME/.config/dots_version"
 
 sudo pacman -Sy --noconfirm --needed libnewt git base-devel rsync
@@ -74,6 +74,8 @@ install_pkgs() {
 apply_dots() {
     mkdir -p ~/.config ~/Pictures/Wallpapers
     
+    [[ -f "$DIR/.zshrc" ]] && sed -i 's/echoti smkx.*/echoti smkx 2>\/dev\/null/g; s/echoti rmkx.*/echoti rmkx 2>\/dev\/null/g' "$DIR/.zshrc"
+
     if [[ -d "$DIR/config" ]]; then
         rsync -a "$DIR/config/" ~/.config/
     fi
