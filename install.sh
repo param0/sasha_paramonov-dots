@@ -3,7 +3,7 @@
 [[ $EUID -eq 0 ]] && echo "Запускай без sudo." && exit 1
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTS_VERSION="1.1"
+DOTS_VERSION="1.3"
 DOTS_VER_FILE="$HOME/.config/dots_version"
 
 sudo pacman -Sy --noconfirm --needed libnewt git base-devel rsync
@@ -32,7 +32,7 @@ PKGS=(
 
 AUR_PKGS=(
     matugen-bin qogir-cursor-theme python-pywal16
-    hyprlauncher-git hyprtoolkit-git hyprwire-git
+    hyprlauncher hyprtoolkit hyprwire
 )
 
 check_system() {
@@ -74,7 +74,10 @@ install_pkgs() {
 apply_dots() {
     mkdir -p ~/.config ~/Pictures/Wallpapers
     
-    [[ -d "$DIR/config" ]] && rsync -a "$DIR/config/" ~/.config/
+    if [[ -d "$DIR/config" ]]; then
+        rsync -a "$DIR/config/" ~/.config/
+    fi
+    
     [[ -f "$DIR/.zshrc" ]] && cp "$DIR/.zshrc" ~/
     [[ -f "$DIR/.bashrc" ]] && cp "$DIR/.bashrc" ~/
     [[ -f "$DIR/darkARTIX.png" ]] && cp "$DIR/darkARTIX.png" ~/Pictures/Wallpapers/
