@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+<action>
+	<icon>preferences-desktop-wallpaper</icon>
+	<name>Сделать фоном рабочего стола</name>
+	<submenu></submenu>
+	<unique-id>hyprpaper-set-wp</unique-id>
+	<command>bash /home/sasha/scripts/set-wallpaper.sh %f</command>
+	<description></description>
+	<range></range>
+	<patterns>*.png;*.jpg;*.jpeg;*.webp</patterns>
+	<image-files/>
+</action>
+<action>
+	<icon></icon>
+	<name>расспаковать архив</name>
+	<submenu></submenu>
+	<unique-id>1781928206138067-1</unique-id>
+	<command>dtrx %F</command>
+	<description>Распаковка архивов (zip, rar, 7z, tar и др.)</description>
+	<range>*</range>
+	<patterns>*.zip;*.rar;*.tar;*.gz;*.bz2;*.7z;*.xz;*.tar.gz;*.tar.bz2</patterns>
+	<other-files/>
+</action>
+</actions>

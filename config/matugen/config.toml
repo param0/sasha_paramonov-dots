@@ -1,0 +1,32 @@
+[config]
+version_check = false
+
+[config.wallpaper]
+command = "awww"
+arguments = ["img", "--transition-type", "center"]
+set = false   # the wallpaper script sets it; matugen only generates colours
+
+[templates.hyprland]
+input_path = '~/.config/matugen/templates/hyprland-colors.conf'
+output_path = '~/.config/hypr/matugen-colors.conf'
+
+[templates.kitty]
+input_path = '~/.config/matugen/templates/kitty-colors.conf'
+output_path = '~/.config/kitty/themes/matugen.conf'
+
+[templates.rofi]
+input_path = '~/.config/matugen/templates/rofi-colors.rasi'
+output_path = '~/.config/rofi/colors-matugen.rasi'
+
+[templates.mako]
+input_path = '~/.config/matugen/templates/mako-config'
+output_path = '~/.config/mako/config'
+post_hook = 'makoctl reload || true'
+
+[templates.quickshell]
+input_path = '~/.config/matugen/templates/quickshell-colours.json'
+output_path = '~/.cache/quickshell-colors.json'   # outside the QML config dir → no hot-reload popup
+
+[templates.keyboard]
+input_path = '~/.config/matugen/templates/keyboard-colors-rgb'
+output_path = '~/.config/keyboard/matugen-colors-rgb'

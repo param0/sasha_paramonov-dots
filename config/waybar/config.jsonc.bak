@@ -1,0 +1,142 @@
+{
+  "spacing": 0,
+  "position": "top",
+  "reload_style_on_change": true,
+  "modules-left": [
+    "custom/logo",
+    "mpris",
+    "hyprland/window",
+  ],
+  "modules-center": ["clock"],
+  "modules-right": ["tray", "group/group-utility"],
+
+  "custom/logo": {
+    "format": "<span size='12000'>󰣇</span>",
+    "tooltips": false,
+  },
+ {
+    "disable-scroll": true,
+    "all-outputs": true,
+    "format": "{icon}",
+    "spacing": 0,
+    "format-icons": {
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4",
+      "5": "5",
+      "6": "6",
+      "7": "7",
+      "8": "8",
+      "9": "9",
+      "10": "10",
+    },
+    "persistent-workspaces": {
+      "*": 3,
+    },
+  },
+
+  "mpris": {
+    "format": "{player_icon} {title}",
+
+    "player-icons": {
+      "default": "<span size='9000'>󰐹</span>",
+      "spotify": "<span size='9000'></span>",
+      "firefox": "<span size='9000'>󰈹</span>",
+    },
+  },
+
+  "hyprland/window": {
+    "format": "<span text-transform=\"capitalize\">{class}</span>",
+    "separate-outputs": true,
+    "tooltips": false,
+    "icon": true,
+    "icon-size": 15,
+    "max-length": 40,
+    "rewrite": {
+      ".*zed.*": "Zed",
+      ".*btop.*": "Btop",
+      ".*abaddon.*": "Abaddon",
+      ".*gimp.*": "GIMP",
+      ".*steam.*": "Steam",
+      ".*hydra.*": "Hydra",
+      ".*sober.*": "Sober",
+      ".*nwg-look.*": "Nwg-look",
+    },
+  },
+
+  "clock": {
+    "timezone": "America/Sao_Paulo",
+    "format": "{:L%H:%M}",
+    "format-alt": "{:L%A, %d de %B de %Y (%R)}",
+    "tooltip-format": "<tt><small>{calendar}</small></tt>",
+    "calendar": {
+      "mode": "year",
+      "mode-mon-col": 3,
+      "weeks-pos": "right",
+      "on-scroll": 1,
+      "format": {
+        "months": "<span color='#ffead3'><b>{}</b></span>",
+        "days": "<span color='#ecc6d9'><b>{}</b></span>",
+        "weeks": "<span color='#99ffdd'><b>S{}</b></span>",
+        "weekdays": "<span color='#ffcc66'><b>{}</b></span>",
+        "today": "<span color='#ff6699'><b><u>{}</u></b></span>",
+      },
+    },
+    "actions": {
+      "on-click-right": "mode",
+      "on-click-forward": "tz_up",
+      "on-click-backward": "tz_down",
+      "on-scroll-up": "shift_up",
+      "on-scroll-down": "shift_down",
+    },
+  },
+
+  "tray": {
+    "icon-size": 18,
+    "spacing": 5,
+    "hidden-items": ["nm_applet"],
+  },
+
+  "group/group-utility": {
+    "orientation": "inherit",
+    "drawer": {
+      "transition-duration": 500,
+      "children-class": "not-power",
+      "transition-left-to-right": false,
+    },
+    "modules": ["custom/menu", "custom/updates", "pulseaudio", "network"],
+  },
+
+  "custom/menu": {
+    "format": "<span size='9000'>󰣆</span>",
+    "on-click": "bash -c 'hyprlauncher || fuzzel'",
+    "tooltip": false,
+  },
+
+  "custom/updates": {
+    "format": "󰚰 {}",
+    "exec": "checkupdates | wc -l",
+    "interval": 3600,
+    "on-click": "hyprctl dispatch exec '[float; opacity 1.0 1.0; size 35% 35%; center] foot -e sudo pacman -Syu'",
+    "tooltip-format": "{} atualizações pendentes",
+  },
+
+  "pulseaudio": {
+    "scroll-step": 5,
+    "format": "{icon}  {volume}%",
+    "format-muted": "  Mudo",
+    "format-icons": {
+      "default": ["", "", ""],
+    },
+    "on-click": "pavucontrol",
+    "on-click-right": "pactl set-sink-mute @DEFAULT_SINK@ toggle",
+  },
+
+  "network": {
+    "format-wifi": "󰖩",
+    "format-ethernet": "",
+    "format-disconnected": "󰈀",
+    "tooltip-format": "{ifname} ({signalStrength}%)",
+  },
+}
