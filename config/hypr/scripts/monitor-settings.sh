@@ -283,6 +283,17 @@ preset_del()   {
 }
 preset_save()  { ensure_presets; preset_del "$1"; printf '%s\t%s\n' "$1" "$2" >>"$PRESET_FILE"; }
 
+reset_monitors() { # re-apply ONLY the monitor= lines from monitors.conf (no global reload)
+    if [ ! -f "$MONITORS_CONF" ]; then notify "monitors.conf не найден"; return 1; fi
+    local line
+    while IFS= read -r line; do
+        line="${line#*=}"          # strip leading 'monitor='
+        apply "$line"
+    done < <(grep -E '^[[:space:]]*monitor[[:space:]]*=' "$MONITORS_CONF")
+    refresh_json
+    notify "Мониторы сброшены к monitors.conf"
+}
+
 make_permanent() { # write the chosen monitor line into monitors.conf
     local args="$1" mon tmp
     mon="${args%%,*}"
@@ -437,7 +448,7 @@ main() {
             "🖵  Проекция · только внешний" \
             "🔁  Проекция · дублировать" \
             "↔  Проекция · расширить" \
-            "↺  Сбросить всё (hyprctl reload)" \
+            "↺  Откатить мониторы к monitors.conf" \
             "──────────────────────────────" ; \
             mlist | sed 's/^/⚙  /' ; } \
             | menu_preview "  🖳 Монитор > " "  matugen · Win+P · Esc — выход")
@@ -450,7 +461,7 @@ main() {
             *"только внешний"*)    projection external ;;
             *дублировать*)         projection duplicate ;;
             *расширить*)           projection extend ;;
-            *Сбросить*)            hyprctl reload >/dev/null 2>&1; notify "Сброшено к monitors.conf" ;;
+            *Откатить*)            reset_monitors ;;
             "⚙  "*) mon=$(printf '%s' "${sel#⚙  }" | cut -f1); configure_monitor "$mon" ;;
         esac
     done
