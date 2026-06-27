@@ -159,6 +159,36 @@ QTEOF
     [[ "$SHELL" != *zsh* ]] && sudo chsh -s "$(which zsh)" "$USER"
 }
 
+# Чистый перенос конфигов — без пакетов, тем, env-переменных, sddm и chsh
+copy_configs() {
+    echo "Копирую конфиги..."
+
+    mkdir -p ~/.config ~/Pictures/Wallpapers
+
+    # Копируем содержимое config/ в ~/.config/
+    if [[ -d "$DOTS_DIR/config" ]]; then
+        rsync -av --delete \
+            --exclude='.git' \
+            --exclude='*.bak' \
+            --exclude='__pycache__' \
+            "$DOTS_DIR/config/" ~/.config/
+    fi
+
+    # Копируем dotfiles
+    [[ -f "$DOTS_DIR/.zshrc" ]]        && cp -f "$DOTS_DIR/.zshrc" ~/
+    [[ -f "$DOTS_DIR/.bashrc" ]]       && cp -f "$DOTS_DIR/.bashrc" ~/
+    [[ -f "$DOTS_DIR/.bash_profile" ]] && cp -f "$DOTS_DIR/.bash_profile" ~/
+
+    # Копируем обои
+    [[ -d "$DOTS_DIR/wallpapers" ]] && cp -f "$DOTS_DIR/wallpapers/"* ~/Pictures/Wallpapers/ 2>/dev/null
+
+    # Права на скрипты
+    find ~/.config/hypr/scripts -type f -name "*.sh" 2>/dev/null -exec chmod +x {} \;
+    find ~/.config/hypr/scripts -type f -name "*.py" 2>/dev/null -exec chmod +x {} \;
+
+    echo "Конфиги перенесены."
+}
+
 check_system() {
     clear
     echo "=== Статус системы ($DISTRO, $INIT_SYSTEM) ==="
@@ -180,12 +210,13 @@ check_system() {
 main_menu() {
     while true; do
         CHOICE=$(whiptail --title "Dotfiles Installer v$DOTS_VERSION ($DISTRO)" \
-            --menu "Выбери действие:" 16 60 6 \
+            --menu "Выбери действие:" 18 64 7 \
             "1" "Проверить зависимости и версию" \
             "2" "Установить yay" \
             "3" "Установить пакеты" \
             "4" "Применить/Обновить dots" \
             "5" "Full Install (Всё и сразу)" \
+            "6" "Только перенести конфиги (без пакетов/тем)" \
             "0" "Выход" 3>&1 1>&2 2>&3)
         case "$CHOICE" in
             1) check_system ;;
@@ -193,6 +224,7 @@ main_menu() {
             3) install_pkgs; whiptail --msgbox "Пакеты установлены." 8 40 ;;
             4) apply_dots; whiptail --msgbox "Конфиги скопированы. v$DOTS_VERSION" 8 50 ;;
             5) install_pkgs; apply_dots; whiptail --msgbox "Готово. Перезайди в систему." 8 40; exit 0 ;;
+            6) copy_configs; whiptail --msgbox "Конфиги перенесены в ~/.config" 8 50 ;;
             0|*) exit 0 ;;
         esac
     done
