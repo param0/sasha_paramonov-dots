@@ -16,4 +16,4 @@
    git clone https://github.com/param0/sasha_paramonov-dots.git ~/dots
    cd ~/dots
    chmod +x install.sh
-   install.sh
+   ./install.sh
