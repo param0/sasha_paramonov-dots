@@ -31,6 +31,8 @@ Singleton {
         "posLeft": "Left",
         "posRight": "Right",
         "wallpapers": "Wallpapers",
+        "notifications": "Notifications",
+        "noNotifications": "No notifications",
         "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     })
 
@@ -49,6 +51,8 @@ Singleton {
         "posLeft": "Слева",
         "posRight": "Справа",
         "wallpapers": "Обои",
+        "notifications": "Уведомления",
+        "noNotifications": "Нет уведомлений",
         "weekdays": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
     })
 

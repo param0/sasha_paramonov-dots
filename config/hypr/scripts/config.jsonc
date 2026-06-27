@@ -13,7 +13,7 @@
         "clock"
     ],
     "modules-right": [
-        "custom/language",
+        "hyprland/language",
         "custom/volume",
         "custom/mic",
         "tray",
@@ -21,7 +21,7 @@
     ],
 
     "custom/logo": {
-        "format": "",
+        "format": " 󰣇",
         "tooltip": false
     },
 
@@ -45,7 +45,7 @@
 
     "custom/volume": {
         "exec": "bash -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@); pct=$(echo \"$v\" | awk \"{print int(\\$2*100)}\"); muted=$(echo \"$v\" | awk \"{print \\$3}\"); if [ \"$muted\" = \"[MUTED]\" ]; then echo \"  mute\"; else echo \"  $pct%\"; fi'",
-        "interval": 2,
+        "interval": 0.5,
         "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
         "on-click-right": "pavucontrol",
         "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 3.0",
@@ -55,18 +55,17 @@
 
     "custom/mic": {
         "exec": "bash -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@); pct=$(echo \"$v\" | awk \"{print int(\\$2*100)}\"); muted=$(echo \"$v\" | awk \"{print \\$3}\"); if [ \"$muted\" = \"[MUTED]\" ]; then echo \" mic: mute\"; elif [ \"$pct\" -eq 100 ]; then echo \" mic: on\"; elif [ \"$pct\" -gt 100 ]; then echo \" mic: $pct%\"; else echo \" mic: $pct%\"; fi'",
-        "interval": 2,
+        "interval": 0.5,
         "on-click": "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
         "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%+ --limit 3.0",
         "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-",
         "format": "{}"
     },
 
-    "custom/language": {
-        "exec": "~/.config/hypr/scripts/kblayout.sh",
-        "interval": 1,
+    "hyprland/language": {
+        "format": "{shortDescription}",
         "on-click": "~/.config/hypr/scripts/switch-layout.sh",
-        "format": "{}"
+        "min-width": 20
     },
 
     "tray": {

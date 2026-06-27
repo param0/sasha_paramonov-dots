@@ -5,7 +5,7 @@
 	<name>Сделать фоном рабочего стола</name>
 	<submenu></submenu>
 	<unique-id>hyprpaper-set-wp</unique-id>
-	<command>bash /home/sasha/scripts/set-wallpaper.sh %f</command>
+	<command>bash ~/scripts/set-wallpaper.sh %f</command>
 	<description></description>
 	<range></range>
 	<patterns>*.png;*.jpg;*.jpeg;*.webp</patterns>

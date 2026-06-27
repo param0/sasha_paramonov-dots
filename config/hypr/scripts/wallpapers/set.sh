@@ -1,28 +1,52 @@
 #!/bin/bash
-set -eu
+WALL="$1"
+[ -f "$WALL" ] || exit 1
 
-WALL=$1
+echo "$WALL" > "$HOME/.config/hypr/.wallpaper_path"
+echo "$WALL" > "$HOME/.config/hypr/.bg_path"
 
-awww img --transition-type center --transition-step 90 "$WALL"
-echo "Wallpaper set successfully"
-
-# --- matugen: primary colour generator (quickshell, kitty, rofi, mako, hyprland) ---
-if command -v matugen >/dev/null 2>&1; then
-    echo "Generating matugen colors..."
-    matugen image "$WALL" --type scheme-content --mode dark --prefer saturation || echo "matugen failed"
-    hyprctl reload >/dev/null 2>&1 || true
-    # reload resets animations.conf → restore workspace slide direction set by quickshell
-    ws_style=$(cat "$HOME/.cache/quickshell-ws-anim" 2>/dev/null || echo slide)
-    hyprctl keyword animation "workspaces,1,5,wind,$ws_style" >/dev/null 2>&1 || true
-    pkill -USR1 kitty 2>/dev/null || true   # live-reload kitty colors (re-reads include)
-    "$HOME/.config/keyboard/set-color-keyboard.sh" >/dev/null 2>&1 &   # keyboard backlight from matugen
+# Detect wallpaper brightness and saturation
+MODE="dark"
+SCHEME="scheme-tonal-spot"
+if command -v convert &>/dev/null; then
+    # Get brightness (0-100%)
+    BRIGHTNESS=$(convert "$WALL" -resize 1x1 -colorspace Gray txt:- 2>/dev/null | tail -1 | grep -oP '\d+\.\d+(?=%)')
+    # Get saturation from HSL tuple (0-255 scale, second value)
+    SAT_RAW=$(convert "$WALL" -resize 1x1 -colorspace HSL txt:- 2>/dev/null | tail -1 | grep -oP '\d+(?=,\d+\))' | head -1)
+    if [ -n "$SAT_RAW" ]; then
+        [ "$SAT_RAW" -lt 10 ] && SCHEME="scheme-monochrome"
+    fi
+    # If wallpaper is achromatic (grey/black/white), use monochrome
+    if [ -n "$SATURATION" ]; then
+        [ "$SATURATION" -lt 5 ] && SCHEME="scheme-monochrome"
+    fi
 fi
 
-# --- pywal: optional, kept only for Firefox (pywalfox) and Discord ---
-if command -v wal >/dev/null 2>&1; then
-    echo "applying pywal colors (firefox/discord)..."
-    wal -i "$WALL" -s -t
-    echo "pywal applied successfully"
+# Update all matugen templates to match mode
+TMPL_DIR="$HOME/.config/matugen/templates"
+if [ "$MODE" = "light" ]; then
+    find "$TMPL_DIR" -type f -exec sed -i 's/\.dark\./.light./g' {} +
 else
-    echo "pywal not installed, skipping"
+    find "$TMPL_DIR" -type f -exec sed -i 's/\.light\./.dark./g' {} +
 fi
+
+# Generate colors
+if command -v matugen &>/dev/null; then
+    matugen image "$WALL" --prefer darkness --mode "$MODE" --type "$SCHEME" 2>/dev/null
+fi
+
+pkill -9 swaybg 2>/dev/null
+
+if ! pgrep -x awww-daemon >/dev/null 2>&1; then
+    setsid awww-daemon </dev/null >/dev/null 2>&1 &
+    sleep 0.5
+fi
+
+if command -v awww &>/dev/null; then
+    awww img "$WALL" --transition-type wave --transition-step 90 --transition-duration 1.2 --transition-fps 60 </dev/null >/dev/null 2>&1
+elif command -v swaybg &>/dev/null; then
+    pkill -9 swaybg 2>/dev/null
+    setsid swaybg -m fill -i "$WALL" </dev/null >/dev/null 2>&1 &
+fi
+
+exit 0

@@ -4,15 +4,15 @@
     "type": "file",
     "source": "$(find \"${XDG_CONFIG_HOME:-$HOME/.config}/fastfetch/ascii/\" -name \"*.txt\" | shuf -n 1)",
     "color": {
-      "1": "white",
-      "2": "white",
-      "3": "white",
-      "4": "white",
-      "5": "white",
-      "6": "white",
-      "7": "white",
-      "8": "white",
-      "9": "white"
+      "1": "{{colors.primary.dark.hex}}",
+      "2": "{{colors.secondary.dark.hex}}",
+      "3": "{{colors.tertiary.dark.hex}}",
+      "4": "{{colors.primary.dark.hex}}",
+      "5": "{{colors.secondary.dark.hex}}",
+      "6": "{{colors.tertiary.dark.hex}}",
+      "7": "{{colors.primary.dark.hex}}",
+      "8": "{{colors.secondary.dark.hex}}",
+      "9": "{{colors.tertiary.dark.hex}}"
     }
   },
   "display": {
@@ -24,8 +24,8 @@
   "modules": [
     {
       "type": "command",
-      "key": "  ",
-      "keyColor": "white",
+      "key": "  ",
+      "keyColor": "{{colors.primary.dark.hex}}",
       "text": "echo 'I am ...'"
     },
     {
@@ -36,35 +36,35 @@
       "type": "os",
       "key": "  󰣇 OS",
       "format": "{2}",
-      "keyColor": "white"
+      "keyColor": "{{colors.primary.dark.hex}}"
     },
     {
       "type": "kernel",
       "key": "   Kernel",
       "format": "{2}",
-      "keyColor": "white"
+      "keyColor": "{{colors.on_surface_variant.dark.hex}}"
     },
     {
       "type": "packages",
       "key": "  󰏗 Packages",
-      "keyColor": "white"
+      "keyColor": "{{colors.secondary.dark.hex}}"
     },
     {
       "type": "display",
       "key": "  󰍹 Display",
       "format": "{1}x{2} @ {3}Hz [{7}]",
-      "keyColor": "white"
+      "keyColor": "{{colors.primary.dark.hex}}"
     },
     {
       "type": "terminal",
-      "key": "   Terminal",
-      "keyColor": "white"
+      "key": "   Terminal",
+      "keyColor": "{{colors.on_surface_variant.dark.hex}}"
     },
     {
       "type": "wm",
       "key": "  󱗃 WM",
       "format": "{2}",
-      "keyColor": "white"
+      "keyColor": "{{colors.secondary.dark.hex}}"
     },
     {
       "type": "custom",
@@ -73,8 +73,8 @@
     "break",
     {
       "type": "title",
-      "key": "  ",
-      "keyColor": "white",
+      "key": "  ",
+      "keyColor": "{{colors.primary.dark.hex}}",
       "format": "{6} {7} {8}"
     },
     {
@@ -82,42 +82,41 @@
       "format": "┌────────────────────────────────────────────────┐"
     },
     {
-      "type": "command",
-      "key": "   CPU",
-      "keyColor": "white",
-      "text": "echo \"$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs) ($(top -bn1 | awk '/Cpu/ {print $2+$4}' | head -1)%)\""
+      "type": "cpu",
+      "key": "   CPU",
+      "format": "{1}",
+      "keyColor": "{{colors.primary.dark.hex}}"
     },
     {
-      "type": "command",
+      "type": "gpu",
       "key": "  󰊴 GPU",
-      "keyColor": "white",
-      "text": "echo \"$(lspci | grep -i 'vga\\|3d\\|display' | sed 's/.*\\[\\([^]]*\\)\\].*/\\1/') ($(cat /sys/class/drm/card0/device/gpu_busy_percent 2>/dev/null || echo 0)%)\""
+      "format": "{2}",
+      "keyColor": "{{colors.on_surface_variant.dark.hex}}"
     },
     {
       "type": "memory",
-      "key": "  🗲 Memory",
-      "keyColor": "white"
+      "key": "   Memory",
+      "keyColor": "{{colors.secondary.dark.hex}}"
     },
     {
       "type": "swap",
       "key": "  󰓡 Swap",
-      "keyColor": "white"
+      "keyColor": "{{colors.primary.dark.hex}}"
     },
     {
       "type": "disk",
       "key": "  󰋊 Disk",
-      "keyColor": "white"
+      "keyColor": "{{colors.on_surface_variant.dark.hex}}"
     },
     {
-      "type": "command",
-      "key": "  󱦟 OS Age",
-      "keyColor": "white",
-      "text": "birth_install=$(stat -c %W /); current=$(date +%s); time_progression=$((current - birth_install)); days_difference=$((time_progression / 86400)); echo $days_difference days"
+      "type": "uptime",
+      "key": "  󱦟 Uptime",
+      "keyColor": "{{colors.secondary.dark.hex}}"
     },
     {
       "type": "uptime",
       "key": "  󱫐 Uptime",
-      "keyColor": "white"
+      "keyColor": "{{colors.primary.dark.hex}}"
     },
     {
       "type": "custom",

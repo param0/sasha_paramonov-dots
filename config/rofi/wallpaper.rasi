@@ -1,0 +1,90 @@
+configuration {
+    show-icons: true;
+    icon-theme: "Adwaita";
+    display-drun: "  Wallpaper";
+    drun-display-format: "{name}";
+}
+
+* {
+    bg:     #1a1b26;
+    bg-alt: #1f2130;
+    fg:     #c0caf5;
+    accent: #7aa2f7;
+    urgent: #f7768e;
+
+    background-color: @bg;
+    text-color: @fg;
+    border-color: @accent;
+}
+
+window {
+    width: 800px;
+    background-color: @bg;
+    border: 2px;
+    border-color: @accent;
+    border-radius: 12px;
+    padding: 0;
+}
+
+mainbox {
+    children: [ inputbar, listview ];
+    background-color: @bg;
+}
+
+inputbar {
+    children: [ prompt, entry ];
+    background-color: @bg-alt;
+    padding: 12px;
+    border-radius: 10px 10px 0 0;
+}
+
+prompt {
+    background-color: @accent;
+    text-color: @bg;
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin: 0 8px 0 0;
+}
+
+entry {
+    placeholder: "Search wallpapers...";
+    placeholder-color: #565f89;
+    background-color: transparent;
+    text-color: @fg;
+    font: "JetBrains Mono 14px";
+}
+
+listview {
+    lines: 8;
+    columns: 2;
+    fixed-height: true;
+    background-color: @bg;
+    padding: 8px;
+}
+
+element {
+    padding: 8px;
+    border-radius: 8px;
+    margin: 2px;
+}
+
+element normal active {
+    background-color: @bg-alt;
+}
+
+element selected {
+    background-color: @accent;
+    text-color: @bg;
+    border-radius: 8px;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+    font: "JetBrains Mono 12px";
+}
+
+element-icon {
+    background-color: transparent;
+    size: 48px;
+}

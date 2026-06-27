@@ -10,18 +10,18 @@
 
 window#waybar {
     background: transparent;
-    color: #e3e1e9;
+    color: {{colors.on_surface.dark.hex}};
 }
 
 #custom-logo {
     font-size: 16px;
     padding: 0 8px 0 4px;
-    color: #b7c4ff;
+    color: {{colors.primary.dark.hex}};
 }
 
 #workspaces button {
     padding: 0 5px;
-    color: #90909a;
+    color: {{colors.outline.dark.hex}};
     border-radius: 3px;
     margin: 2px 0;
     min-width: 14px;
@@ -29,35 +29,35 @@ window#waybar {
 }
 
 #workspaces button.active {
-    color: #b7c4ff;
+    color: {{colors.primary.dark.hex}};
     background: rgba(255, 255, 255, 0.08);
 }
 
 #workspaces button.urgent {
-    color: #ffb4ab;
+    color: {{colors.error.dark.hex}};
     background: rgba(243, 139, 168, 0.15);
 }
 
 #clock {
-    color: #c6c5d0;
+    color: {{colors.on_surface_variant.dark.hex}};
     padding: 0 8px;
 }
 
 #custom-language {
-    color: #b7c4ff;
+    color: {{colors.primary.dark.hex}};
     padding: 0;
     margin: 0;
     min-width: 0;
 }
 
 #custom-volume {
-    color: #c2c5dd;
+    color: {{colors.secondary.dark.hex}};
     padding: 0 4px 0 0;
     margin-left: -4px;
 }
 
 #custom-mic {
-    color: #e3bada;
+    color: {{colors.tertiary.dark.hex}};
     padding: 0 6px;
 }
 

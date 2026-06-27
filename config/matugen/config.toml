@@ -27,6 +27,15 @@ post_hook = 'makoctl reload || true'
 input_path = '~/.config/matugen/templates/quickshell-colours.json'
 output_path = '~/.cache/quickshell-colors.json'   # outside the QML config dir → no hot-reload popup
 
+[templates.waybar]
+input_path = '~/.config/matugen/templates/waybar-style.css'
+output_path = '~/.config/waybar/style.css'
+post_hook = 'pkill -SIGUSR2 waybar || true'
+
+[templates.fastfetch]
+input_path = '~/.config/matugen/templates/fastfetch.jsonc'
+output_path = '~/.config/fastfetch/config.jsonc'
+
 [templates.keyboard]
 input_path = '~/.config/matugen/templates/keyboard-colors-rgb'
 output_path = '~/.config/keyboard/matugen-colors-rgb'

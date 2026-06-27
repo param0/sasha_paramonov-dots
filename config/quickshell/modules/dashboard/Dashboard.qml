@@ -60,7 +60,7 @@ PanelWindow {
             id: card
 
             width: 760
-            height: 730
+            height: 780
             color: Colours.surface
 
             // square the corners facing the bar so it reads as fused to it
@@ -140,7 +140,17 @@ PanelWindow {
 
                 DashResources { width: parent.width }
 
-                DashControls { width: parent.width }
+                Row {
+                    width: parent.width
+                    spacing: Appearance.spacing.large
+
+                    DashControls {
+                        width: (parent.width - Appearance.spacing.large) / 2
+                    }
+                    DashNotifications {
+                        width: (parent.width - Appearance.spacing.large) / 2
+                    }
+                }
             }
         }
     }
