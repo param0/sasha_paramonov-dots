@@ -3,7 +3,7 @@
 [[ $EUID -eq 0 ]] && echo "Запускай без sudo." && exit 1
 
 DOTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTS_VERSION="1.7"
+DOTS_VERSION="1.8"
 DOTS_VER_FILE="$HOME/.config/dots_version"
 
 # Определяем дистрибутив
@@ -14,8 +14,6 @@ elif grep -qi "arch" /etc/os-release 2>/dev/null; then
 else
     DISTRO="arch"
 fi
-
-sudo pacman -Sy --noconfirm --needed libnewt git base-devel rsync
 
 export NEWT_COLORS="
 root=,black
@@ -30,23 +28,29 @@ actsellistbox=black,cyan
 title=cyan,black
 "
 
+# ── Пакеты ──
 PKGS=(
-    hyprland alacritty waybar rofi thunar swaybg fastfetch btop micro
-    cliphist wl-clipboard pipewire pipewire-pulse pipewire-alsa wireplumber
-    brightnessctl ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
-    qt5ct qt6ct kvantum pamixer pavucontrol mako nwg-look
-    cava zsh zsh-autosuggestions zsh-syntax-highlighting wget curl rsync
-    hyprcursor hypridle hyprpaper hyprshot grim slurp wtype
+    hyprland hyprpaper hypridle hyprlock hyprcursor
     xdg-desktop-portal-hyprland xdg-desktop-portal-gtk polkit
-    python python-evdev inotify-tools dunst
-    gtk3 gtk4 gnome-themes-extra
+    waybar alacritty thunar gvfs rofi-wayland
+    swaybg awww mako
+    hyprshot cliphist wl-clipboard grim slurp wtype
+    pipewire pipewire-pulse pipewire-alsa wireplumber
+    pamixer pavucontrol brightnessctl playerctl
+    fastfetch btop fzf chafa imagemagick micro
+    zsh zsh-autosuggestions zsh-syntax-highlighting ncurses
+    ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols noto-fonts noto-fonts-emoji
+    qt5ct qt6ct kvantum gnome-themes-extra nwg-look
+    gtk3 gtk4
+    python python-evdev python-gobject inotify-tools
+    network-manager-applet dunst
 )
 
-# Определяем менеджер входа и добавляем пакет
-if systemctl list-unit-files | grep -q sddm; then
+# Определяем init system
+if command -v systemctl &>/dev/null; then
     INIT_SYSTEM="systemd"
     PKGS+=(sddm)
-elif command -v runit-init &>/dev/null; then
+elif command -v runit-init &>/dev/null || [ -d /run/runit ]; then
     INIT_SYSTEM="runit"
     PKGS+=(sddm-runit)
 else
@@ -56,6 +60,7 @@ fi
 
 AUR_PKGS=(
     matugen-bin
+    awww-git
     qogir-cursor-theme
     python-pywal16
     quickshell-git
@@ -63,24 +68,11 @@ AUR_PKGS=(
     hyprpicker
 )
 
-check_system() {
-    clear
-    echo "=== Статус системы ($DISTRO, $INIT_SYSTEM) ==="
-    [[ -f "$DOTS_VER_FILE" ]] && CURRENT_VER=$(cat "$DOTS_VER_FILE") || CURRENT_VER="Не установлены"
-    echo "Dots: установлена [$CURRENT_VER] | скрипт [$DOTS_VERSION]"
-    echo "Директория dots: $DOTS_DIR"
-    echo "------------------------"
-    command -v yay &>/dev/null && echo "[+] yay" || echo "[-] yay"
-    for pkg in hyprland waybar alacritty swaybg zsh rofi; do
-        pacman -Qs "^$pkg$" &>/dev/null && echo "[+] $pkg" || echo "[-] $pkg"
-    done
-    echo "------------------------"
-    [[ -d "$HOME/.config/hypr" ]] && echo "[+] hypr конфиг есть" || echo "[-] hypr конфиг ОТСУТСТВУЕТ"
-    read -n 1 -s -r -p "Нажми любую клавишу..."
-}
+# ── Функции ──
 
 install_yay() {
     command -v yay &>/dev/null && return
+    echo "Устанавливаю yay..."
     git clone https://aur.archlinux.org/yay-bin.git /tmp/yay-bin
     cd /tmp/yay-bin && makepkg -si --noconfirm
     cd - && rm -rf /tmp/yay-bin
@@ -88,52 +80,71 @@ install_yay() {
 
 install_pkgs() {
     install_yay
+    echo "Устанавливаю пакеты..."
     sudo pacman -S --needed --noconfirm "${PKGS[@]}"
     yay -S --needed --noconfirm "${AUR_PKGS[@]}"
+}
+
+apply_dots() {
+    echo "Копирую конфиги..."
+
+    # Создаём директории
+    mkdir -p ~/.config ~/Pictures/Wallpapers
+
+    # Копируем содержимое config/ в ~/.config/
+    if [[ -d "$DOTS_DIR/config" ]]; then
+        rsync -av --delete \
+            --exclude='.git' \
+            --exclude='*.bak' \
+            --exclude='__pycache__' \
+            "$DOTS_DIR/config/" ~/.config/
+    fi
+
+    # Копируем dotfiles
+    [[ -f "$DOTS_DIR/.zshrc" ]] && cp -f "$DOTS_DIR/.zshrc" ~/
+    [[ -f "$DOTS_DIR/.bashrc" ]] && cp -f "$DOTS_DIR/.bashrc" ~/
+    [[ -f "$DOTS_DIR/.bash_profile" ]] && cp -f "$DOTS_DIR/.bash_profile" ~/
+
+    # Копируем обои
+    [[ -d "$DOTS_DIR/wallpapers" ]] && cp -f "$DOTS_DIR/wallpapers/"* ~/Pictures/Wallpapers/ 2>/dev/null
+
+    # Права на скрипты
+    find ~/.config/hypr/scripts -type f -name "*.sh" 2>/dev/null -exec chmod +x {} \;
+    find ~/.config/hypr/scripts -type f -name "*.py" 2>/dev/null -exec chmod +x {} \;
 
     # GTK тёмная тема
     mkdir -p ~/.config/gtk-3.0 ~/.config/gtk-4.0
-    cat > ~/.config/gtk-3.0/settings.ini << 'EOF'
+    cat > ~/.config/gtk-3.0/settings.ini << 'GTKEOF'
 [Settings]
 gtk-theme-name=Adwaita-dark
 gtk-icon-theme-name=Adwaita
 gtk-font-name=Noto Sans 11
 gtk-application-prefer-dark-theme=1
-EOF
+GTKEOF
     cp ~/.config/gtk-3.0/settings.ini ~/.config/gtk-4.0/settings.ini
-}
-
-apply_dots() {
-    mkdir -p ~/.config ~/Pictures/Wallpapers
-
-    # Копируем все конфиги
-    if [[ -d "$DOTS_DIR/config" ]]; then
-        cp -af "$DOTS_DIR/config/." ~/.config/
-    fi
-
-    [[ -f "$DOTS_DIR/.zshrc" ]]    && cp -f "$DOTS_DIR/.zshrc" ~/
-    [[ -f "$DOTS_DIR/.bashrc" ]]   && cp -f "$DOTS_DIR/.bashrc" ~/
-    [[ -f "$DOTS_DIR/darkARTIX.png" ]] && cp -f "$DOTS_DIR/darkARTIX.png" ~/Pictures/Wallpapers/
-
-    # Права на скрипты
-    find ~/.config/hypr/scripts -type f -name "*.sh" 2>/dev/null -exec chmod +x {} \;
-    find ~/.config/hypr/scripts -type f -name "*.py"  2>/dev/null -exec chmod +x {} \;
 
     # QT тема
     mkdir -p ~/.config/qt5ct ~/.config/qt6ct
     for d in qt5ct qt6ct; do
-        cat > ~/.config/$d/$d.conf << 'EOF'
+        cat > ~/.config/$d/$d.conf << 'QTEOF'
 [Appearance]
 style=kvantum-dark
 icon_theme=Adwaita
-EOF
+QTEOF
     done
 
-    # Переменные окружения (добавляем если нет)
-    grep -q "QT_QPA_PLATFORMTHEME" ~/.bash_profile 2>/dev/null || \
-        printf '\nexport QT_QPA_PLATFORMTHEME=qt6ct\nexport QT_STYLE_OVERRIDE=kvantum-dark\n' >> ~/.bash_profile
-    grep -q "QT_QPA_PLATFORMTHEME" ~/.zshrc 2>/dev/null || \
-        printf '\nexport QT_QPA_PLATFORMTHEME=qt6ct\nexport QT_STYLE_OVERRIDE=kvantum-dark\n' >> ~/.zshrc
+    # Переменные окружения
+    for RC in ~/.bash_profile ~/.zshrc; do
+        [[ -f "$RC" ]] || continue
+        grep -q "QT_QPA_PLATFORMTHEME" "$RC" 2>/dev/null || \
+            printf '\nexport QT_QPA_PLATFORMTHEME=qt6ct\nexport QT_STYLE_OVERRIDE=kvantum-dark\nexport XDG_SESSION_TYPE=wayland\nexport XDG_CURRENT_DESKTOP=Hyprland\n' >> "$RC"
+    done
+
+    # Генерируем matugen цвета из текущих обоев
+    WALL=$(cat ~/.config/hypr/.wallpaper_path 2>/dev/null || cat ~/.config/hypr/.bg_path 2>/dev/null)
+    if [[ -n "$WALL" && -f "$WALL" && -f ~/.config/hypr/scripts/wallpapers/set.sh ]]; then
+        bash ~/.config/hypr/scripts/wallpapers/set.sh "$WALL" 2>/dev/null
+    fi
 
     # Включаем sddm
     if [[ "$INIT_SYSTEM" == "systemd" ]]; then
@@ -144,7 +155,26 @@ EOF
 
     echo "$DOTS_VERSION" > "$DOTS_VER_FILE"
 
+    # Меняем оболочку на zsh
     [[ "$SHELL" != *zsh* ]] && sudo chsh -s "$(which zsh)" "$USER"
+}
+
+check_system() {
+    clear
+    echo "=== Статус системы ($DISTRO, $INIT_SYSTEM) ==="
+    [[ -f "$DOTS_VER_FILE" ]] && CURRENT_VER=$(cat "$DOTS_VER_FILE") || CURRENT_VER="Не установлены"
+    echo "Dots: установлена [$CURRENT_VER] | скрипт [$DOTS_VERSION]"
+    echo "Директория: $DOTS_DIR"
+    echo "------------------------"
+    command -v yay &>/dev/null && echo "[+] yay" || echo "[-] yay"
+    for pkg in hyprland waybar alacritty swaybg zsh rofi fzf chafa mako awww; do
+        pacman -Qs "^$pkg$" &>/dev/null && echo "[+] $pkg" || echo "[-] $pkg"
+    done
+    echo "------------------------"
+    [[ -d "$HOME/.config/hypr" ]] && echo "[+] hypr конфиг" || echo "[-] hypr конфиг ОТСУТСТВУЕТ"
+    [[ -f "$HOME/.config/waybar/style.css" ]] && echo "[+] waybar style" || echo "[-] waybar style"
+    [[ -f "$HOME/.config/hypr/scripts/wallpapers/picker.sh" ]] && echo "[+] picker.sh" || echo "[-] picker.sh"
+    read -n 1 -s -r -p "Нажми любую клавишу..."
 }
 
 main_menu() {
