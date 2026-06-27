@@ -37,7 +37,7 @@ PKGS=(
     hyprshot cliphist wl-clipboard grim slurp wtype
     pipewire pipewire-pulse pipewire-alsa wireplumber
     pamixer pavucontrol brightnessctl playerctl
-    fastfetch btop fzf chafa imagemagick micro
+    fastfetch btop fzf chafa imagemagick micro rsync
     zsh zsh-autosuggestions zsh-syntax-highlighting ncurses
     ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols noto-fonts noto-fonts-emoji
     qt5ct qt6ct kvantum gnome-themes-extra nwg-look
