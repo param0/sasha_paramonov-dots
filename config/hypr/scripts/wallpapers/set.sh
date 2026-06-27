@@ -13,14 +13,17 @@ if command -v convert &>/dev/null; then
     BRIGHTNESS=$(convert "$WALL" -resize 1x1 -colorspace Gray txt:- 2>/dev/null | tail -1 | grep -oP '\d+\.\d+(?=%)')
     # Get saturation from HSL tuple (0-255 scale, second value)
     SAT_RAW=$(convert "$WALL" -resize 1x1 -colorspace HSL txt:- 2>/dev/null | tail -1 | grep -oP '\d+(?=,\d+\))' | head -1)
+    # If wallpaper is achromatic (grey/black/white), use monochrome
     if [ -n "$SAT_RAW" ]; then
         [ "$SAT_RAW" -lt 10 ] && SCHEME="scheme-monochrome"
     fi
-    # If wallpaper is achromatic (grey/black/white), use monochrome
-    if [ -n "$SATURATION" ]; then
-        [ "$SATURATION" -lt 5 ] && SCHEME="scheme-monochrome"
-    fi
 fi
+
+# Persist the chosen mode/scheme so restore-wallpaper.sh can regenerate the
+# exact same colours on boot (the quickshell colours live in ~/.cache, which
+# can be wiped between sessions — without this, colours revert to defaults
+# after a reboot until the next manual wallpaper change).
+printf '%s %s\n' "$MODE" "$SCHEME" > "$HOME/.config/hypr/.wallpaper_mode"
 
 # Update all matugen templates to match mode
 TMPL_DIR="$HOME/.config/matugen/templates"
