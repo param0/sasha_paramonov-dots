@@ -1,0 +1,130 @@
+live-session:
+  user: artix
+  password: artix
+  autologin: true
+  use-xlibre: false
+  services:
+    - NetworkManager
+    - acpid
+    - bluetoothd
+  user-services:
+    - dbus
+
+rootfs:
+  packages:
+    - mkinitcpio-nfs-utils
+    - squashfs-tools
+    - artix-grub-live
+    - libnewt
+
+    # Core
+    - base
+    - base-devel
+    - sudo
+    - linux
+    - linux-headers
+    - linux-firmware
+    - linux-firmware-whence
+
+    # Boot
+    - grub
+    - efibootmgr
+
+    # Hyprland
+    - hyprland
+    - hyprpaper
+    - hypridle
+    - hyprlock
+    - hyprcursor
+    - xdg-desktop-portal-hyprland
+    - xdg-desktop-portal-gtk
+    - polkit
+    - swaybg
+    - awww
+    - mako
+
+    # Apps
+    - waybar
+    - alacritty
+    - thunar
+    - gvfs
+    - rofi-wayland
+    - micro
+    - fastfetch
+    - btop
+    - dunst
+    - grim
+    - slurp
+    - hyprshot
+    - cliphist
+    - wl-clipboard
+    - brightnessctl
+    - playerctl
+    - pamixer
+    - pavucontrol
+    - fzf
+    - chafa
+    - imagemagick
+
+    # Audio
+    - pipewire
+    - pipewire-pulse
+    - pipewire-alsa
+    - wireplumber
+
+    # GPU AMD
+    - mesa
+    - vulkan-radeon
+    - libva-mesa-driver
+
+    # GPU Intel
+    - vulkan-intel
+    - intel-media-driver
+
+    # CPU Microcode
+    - amd-ucode
+    - intel-ucode
+
+    # Bluetooth
+    - bluez
+    - bluez-utils
+    - blueman
+
+    # Network
+    - networkmanager
+    - network-manager-applet
+
+    # Fonts
+    - ttf-jetbrains-mono-nerd
+    - noto-fonts
+    - noto-fonts-emoji
+
+    # Qt/GTK
+    - qt5ct
+    - qt6ct
+    - kvantum
+    - gnome-themes-extra
+    - nwg-look
+
+    # Python
+    - python
+    - python-evdev
+    - python-gobject
+    - inotify-tools
+
+    # Dev
+    - git
+
+    # Init
+    - artools-base
+
+  packages-init:
+    runit:
+      - syslog-ng-runit
+      - networkmanager-runit
+      - elogind-runit
+      - sddm-runit
+      - artix-live-runit
+      - bluez-runit
+      - openssh-runit
+      - avahi-runit

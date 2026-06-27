@@ -3,14 +3,14 @@
 [[ $EUID -eq 0 ]] && echo "Запускай без sudo." && exit 1
 
 DOTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTS_VERSION="1.6"
+DOTS_VERSION="1.7"
 DOTS_VER_FILE="$HOME/.config/dots_version"
 
 # Определяем дистрибутив
-if grep -qi "arch" /etc/os-release 2>/dev/null; then
-    DISTRO="arch"
-elif grep -qi "artix" /etc/os-release 2>/dev/null; then
+if grep -qi "artix" /etc/os-release 2>/dev/null; then
     DISTRO="artix"
+elif grep -qi "arch" /etc/os-release 2>/dev/null; then
+    DISTRO="arch"
 else
     DISTRO="arch"
 fi
@@ -36,24 +36,36 @@ PKGS=(
     brightnessctl ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
     qt5ct qt6ct kvantum pamixer pavucontrol mako nwg-look
     cava zsh zsh-autosuggestions zsh-syntax-highlighting wget curl rsync
-    hyprcursor hypridle hyprpaper hyprshot grim slurp
+    hyprcursor hypridle hyprpaper hyprshot grim slurp wtype
     xdg-desktop-portal-hyprland xdg-desktop-portal-gtk polkit
     python python-evdev inotify-tools dunst
     gtk3 gtk4 gnome-themes-extra
 )
+
+# Определяем менеджер входа и добавляем пакет
+if systemctl list-unit-files | grep -q sddm; then
+    INIT_SYSTEM="systemd"
+    PKGS+=(sddm)
+elif command -v runit-init &>/dev/null; then
+    INIT_SYSTEM="runit"
+    PKGS+=(sddm-runit)
+else
+    INIT_SYSTEM="systemd"
+    PKGS+=(sddm)
+fi
 
 AUR_PKGS=(
     matugen-bin
     qogir-cursor-theme
     python-pywal16
     quickshell-git
-    hyprlauncher-git
-    hyprtoolkit-git
+    grimblast-git
+    hyprpicker
 )
 
 check_system() {
     clear
-    echo "=== Статус системы ($DISTRO) ==="
+    echo "=== Статус системы ($DISTRO, $INIT_SYSTEM) ==="
     [[ -f "$DOTS_VER_FILE" ]] && CURRENT_VER=$(cat "$DOTS_VER_FILE") || CURRENT_VER="Не установлены"
     echo "Dots: установлена [$CURRENT_VER] | скрипт [$DOTS_VERSION]"
     echo "Директория dots: $DOTS_DIR"
@@ -122,6 +134,13 @@ EOF
         printf '\nexport QT_QPA_PLATFORMTHEME=qt6ct\nexport QT_STYLE_OVERRIDE=kvantum-dark\n' >> ~/.bash_profile
     grep -q "QT_QPA_PLATFORMTHEME" ~/.zshrc 2>/dev/null || \
         printf '\nexport QT_QPA_PLATFORMTHEME=qt6ct\nexport QT_STYLE_OVERRIDE=kvantum-dark\n' >> ~/.zshrc
+
+    # Включаем sddm
+    if [[ "$INIT_SYSTEM" == "systemd" ]]; then
+        sudo systemctl enable sddm 2>/dev/null
+    else
+        sudo ln -sf /etc/sv/sddm /var/run/service/ 2>/dev/null
+    fi
 
     echo "$DOTS_VERSION" > "$DOTS_VER_FILE"
 
