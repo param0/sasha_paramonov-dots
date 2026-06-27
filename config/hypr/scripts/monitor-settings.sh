@@ -82,7 +82,7 @@ menu_preview() { # like menu(), with wallpaper/status preview pane
         --preview "cat '$PREVIEW_FILE' 2>/dev/null" \
         --preview-window=right:46%:wrap:noborder
 }
-ask() { local r; printf '\033[2J\033[H\n'; read -e -r -p "  $1" r; printf '%s' "$r"; }
+ask() { local r; printf '\033[2J\033[H\n  %s' "$1" >/dev/tty; read -e -r r </dev/tty; printf '%s' "$r"; }
 
 # ── JSON readers (operate on cached MON_JSON, no extra hyprctl spawn) ─────────
 mlist() { printf '%s' "$MON_JSON" | python3 -c '
@@ -137,16 +137,22 @@ pick_monitor() { # echoes a monitor name (auto-selects when only one)
 # ── 15-second confirmation with auto-revert ──────────────────────────────────
 confirm_keep() {
     local s=15 k
-    command -v tput >/dev/null 2>&1 && tput civis 2>/dev/null
+    # Read keys from the controlling terminal directly: when the script is
+    # launched via `alacritty -e`, stdin may be at EOF, which makes `read -t`
+    # return instantly and burn the whole countdown in milliseconds.
+    exec 3</dev/tty 2>/dev/null || { command -v tput >/dev/null 2>&1 && tput cnorm 2>/dev/null; return 1; }
+    command -v tput >/dev/null 2>&1 && tput civis >/dev/tty 2>/dev/null
     while [ "$s" -gt 0 ]; do
-        printf '\r\033[K  \033[1mОставить настройки?\033[0m  [Enter] оставить · [любая клавиша] откат   откат через %2d с ' "$s"
-        if read -rsn1 -t 1 k; then
-            printf '\n'; command -v tput >/dev/null 2>&1 && tput cnorm 2>/dev/null
+        printf '\r\033[K  \033[1mОставить настройки?\033[0m  [Enter] оставить · [любая клавиша] откат   откат через %2d с ' "$s" >/dev/tty
+        if read -rsn1 -t 1 -u 3 k; then
+            printf '\n' >/dev/tty; command -v tput >/dev/null 2>&1 && tput cnorm >/dev/tty 2>/dev/null
+            exec 3<&-
             case "$k" in ''|y|Y|д|Д) return 0 ;; *) return 1 ;; esac
         fi
         s=$((s-1))
     done
-    printf '\n'; command -v tput >/dev/null 2>&1 && tput cnorm 2>/dev/null
+    printf '\n' >/dev/tty; command -v tput >/dev/null 2>&1 && tput cnorm >/dev/tty 2>/dev/null
+    exec 3<&-
     return 1
 }
 
@@ -168,9 +174,9 @@ apply_with_confirm() {
         fi
     fi
 
-    printf '\033[2J\033[H\n'
-    [ -s "$THUMB_FILE" ] && cat "$THUMB_FILE"
-    printf '\n  \033[1mПрименено:\033[0m %s\n\n' "$newargs"
+    printf '\033[2J\033[H\n' >/dev/tty
+    [ -s "$THUMB_FILE" ] && cat "$THUMB_FILE" >/dev/tty
+    printf '\n  \033[1mПрименено:\033[0m %s\n\n' "$newargs" >/dev/tty
     if confirm_keep; then
         notify "✓ Применено: $newargs"; return 0
     fi
@@ -282,6 +288,17 @@ preset_del()   {
     awk -F'\t' -v n="$1" 'NF==0 || $0 ~ /^[[:space:]]*#/ || $1!=n' "$PRESET_FILE" >"$tmp" && mv "$tmp" "$PRESET_FILE"
 }
 preset_save()  { ensure_presets; preset_del "$1"; printf '%s\t%s\n' "$1" "$2" >>"$PRESET_FILE"; }
+
+reset_monitors() { # re-apply ONLY the monitor= lines from monitors.conf (no global reload)
+    if [ ! -f "$MONITORS_CONF" ]; then notify "monitors.conf не найден"; return 1; fi
+    local line
+    while IFS= read -r line; do
+        line="${line#*=}"          # strip leading 'monitor='
+        apply "$line"
+    done < <(grep -E '^[[:space:]]*monitor[[:space:]]*=' "$MONITORS_CONF")
+    refresh_json
+    notify "Мониторы сброшены к monitors.conf"
+}
 
 make_permanent() { # write the chosen monitor line into monitors.conf
     local args="$1" mon tmp
@@ -437,7 +454,7 @@ main() {
             "🖵  Проекция · только внешний" \
             "🔁  Проекция · дублировать" \
             "↔  Проекция · расширить" \
-            "↺  Сбросить всё (hyprctl reload)" \
+            "↺  Откатить мониторы к monitors.conf" \
             "──────────────────────────────" ; \
             mlist | sed 's/^/⚙  /' ; } \
             | menu_preview "  🖳 Монитор > " "  matugen · Win+P · Esc — выход")
@@ -450,7 +467,7 @@ main() {
             *"только внешний"*)    projection external ;;
             *дублировать*)         projection duplicate ;;
             *расширить*)           projection extend ;;
-            *Сбросить*)            hyprctl reload >/dev/null 2>&1; notify "Сброшено к monitors.conf" ;;
+            *Откатить*)            reset_monitors ;;
             "⚙  "*) mon=$(printf '%s' "${sel#⚙  }" | cut -f1); configure_monitor "$mon" ;;
         esac
     done

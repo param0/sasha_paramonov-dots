@@ -37,7 +37,7 @@ PKGS=(
     hyprshot cliphist wl-clipboard grim slurp wtype
     pipewire pipewire-pulse pipewire-alsa wireplumber
     pamixer pavucontrol brightnessctl playerctl
-    fastfetch btop fzf chafa imagemagick micro
+    fastfetch btop fzf chafa imagemagick micro rsync
     zsh zsh-autosuggestions zsh-syntax-highlighting ncurses
     ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols noto-fonts noto-fonts-emoji
     qt5ct qt6ct kvantum gnome-themes-extra nwg-look
@@ -92,12 +92,17 @@ apply_dots() {
     mkdir -p ~/.config ~/Pictures/Wallpapers
 
     # Копируем содержимое config/ в ~/.config/
+    # ВАЖНО: без --delete! Только дополняем/перезаписываем свои файлы,
+    # чужие конфиги (браузер, obs, pulse, pipewire и т.д.) НЕ трогаем.
+    # Перезаписываемые файлы складываем в датированный бэкап.
     if [[ -d "$DOTS_DIR/config" ]]; then
-        rsync -av --delete \
+        local BACKUP="$HOME/.config-backups/$(date +%Y%m%d-%H%M%S)"
+        rsync -av --backup --backup-dir="$BACKUP" \
             --exclude='.git' \
             --exclude='*.bak' \
             --exclude='__pycache__' \
             "$DOTS_DIR/config/" ~/.config/
+        echo "Бэкап заменённых файлов: $BACKUP"
     fi
 
     # Копируем dotfiles
@@ -166,12 +171,15 @@ copy_configs() {
     mkdir -p ~/.config ~/Pictures/Wallpapers
 
     # Копируем содержимое config/ в ~/.config/
+    # БЕЗ --delete: чужие конфиги не удаляем, перезаписи бэкапим.
     if [[ -d "$DOTS_DIR/config" ]]; then
-        rsync -av --delete \
+        local BACKUP="$HOME/.config-backups/$(date +%Y%m%d-%H%M%S)"
+        rsync -av --backup --backup-dir="$BACKUP" \
             --exclude='.git' \
             --exclude='*.bak' \
             --exclude='__pycache__' \
             "$DOTS_DIR/config/" ~/.config/
+        echo "Бэкап заменённых файлов: $BACKUP"
     fi
 
     # Копируем dotfiles
