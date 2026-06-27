@@ -1,0 +1,9 @@
+[window]
+dimensions = { columns = 190, lines = 48 }
+padding = { x = 0, y = 0 }
+opacity = 1.0
+decorations = "None"
+
+[font.normal]
+family = "JetBrains Mono"
+size = 14.0

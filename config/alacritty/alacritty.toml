@@ -30,4 +30,9 @@ style = "Bold Italic"
 shape = "Beam"
 blinking = "On"
 
-# cursor_trail и enable_graphics в alacritty не поддерживаются
+[mouse]
+hide_when_typing = false
+
+[scrolling]
+history = 10000
+multiplier = 3
