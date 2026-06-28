@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Monitor control center for Hyprland  (Super+P)
-#  • Win+P-style projection presets
-#  • Monitor overclock  (auto-tuner + manual + custom CVT modeline)
-#  • 15-second "keep these settings?" confirm — auto-revert on timeout/reject
-#  • Editable / appliable / savable / deletable presets (auto-delete on failure)
-#  • CS2 stretched/4:3 custom resolutions
-#  • UI themed from matugen colours + wallpaper thumbnail
-#  Changes apply live via `hyprctl` (runtime); "make permanent" writes monitors.conf
-# ─────────────────────────────────────────────────────────────────────────────
+#  - Win+P-style projection (internal / external / duplicate / extend)
+#  - Monitor overclock (auto-tuner + manual + custom CVT modeline)
+#  - 15-second "keep these settings?" confirm, auto-revert on timeout/reject
+#  - Presets: create / apply / edit / delete (auto-delete on hard failure)
+#  - CS2 stretched / 4:3 custom resolutions
+#  Kept settings are written to monitors.conf, so they survive reboot AND a
+#  hyprctl reload (e.g. from the wallpaper scripts) -> overclock is not lost.
+#  UI colours come from matugen; style follows the wallpaper picker.
+# -----------------------------------------------------------------------------
 set -uo pipefail
 
 CACHE_DIR="$HOME/.cache/monitor-settings"
@@ -26,7 +27,7 @@ refresh_json() { MON_JSON="$(hyprctl monitors all -j 2>/dev/null)"; }
 apply()  { hyprctl keyword monitor "$1" >/dev/null 2>&1; }
 notify() { command -v notify-send >/dev/null 2>&1 && notify-send -a Monitor "Monitor" "$1"; }
 
-# ── matugen colours → fzf theme ──────────────────────────────────────────────
+# -- matugen colours -> fzf theme ---------------------------------------------
 load_colors() {
     FZF_COLORS=$(C="$COLORS_JSON" python3 -c '
 import json,os
@@ -43,7 +44,7 @@ print(f"bg:{bg},bg+:{bg2},fg:{fg},fg+:#ffffff,info:{pri},prompt:{pri},"
     [ -n "$FZF_COLORS" ] || FZF_COLORS="bg:#0a0a0f,bg+:#15151f,fg:#c0caf5,fg+:#ffffff,info:#7aa2f7,prompt:#ffffff,pointer:#bb9af7,hl:#f7768e,hl+:#f7768e"
 }
 
-# ── wallpaper thumbnail (cached, regenerated only when wallpaper changes) ─────
+# -- wallpaper thumbnail (cached, regenerated only when wallpaper changes) -----
 gen_thumb() {
     local wall
     wall=$(cat "$WALL_PATH" 2>/dev/null)
@@ -61,17 +62,18 @@ build_preview() {
     {
         [ -s "$THUMB_FILE" ] && cat "$THUMB_FILE"
         printf '\n  \033[1mМониторы\033[0m\n'
-        mlist | sed 's/\t/  ·  /; s/^/   /'
+        mlist | sed 's/\t/   /; s/^/   /'
         printf '\n  \033[1mПресеты\033[0m\n'
         if preset_lines | grep -q .; then
-            preset_lines | cut -f1 | sed 's/^/   • /'
+            preset_lines | cut -f1 | sed 's/^/   - /'
         else
-            printf '   (нет)\n'
+            printf '   нет\n'
         fi
     } >"$PREVIEW_FILE"
 }
 
-# ── fzf wrappers ─────────────────────────────────────────────────────────────
+# -- fzf wrappers (style mirrors the wallpaper picker) -------------------------
+HDR="  ↑↓ выбор | Enter выбрать | Esc назад"
 menu() { # $1 prompt  $2 header   (options on stdin)
     fzf --prompt="$1" --header="$2" --height=100% --layout=reverse \
         --info=inline --border=rounded --color="$FZF_COLORS" --no-multi --no-sort
@@ -84,7 +86,7 @@ menu_preview() { # like menu(), with wallpaper/status preview pane
 }
 ask() { local r; printf '\033[2J\033[H\n  %s' "$1" >/dev/tty; read -e -r r </dev/tty; printf '%s' "$r"; }
 
-# ── JSON readers (operate on cached MON_JSON, no extra hyprctl spawn) ─────────
+# -- JSON readers (operate on cached MON_JSON, no extra hyprctl spawn) ---------
 mlist() { printf '%s' "$MON_JSON" | python3 -c '
 import json,sys
 try: m=json.load(sys.stdin)
@@ -130,11 +132,11 @@ pick_monitor() { # echoes a monitor name (auto-selects when only one)
     local -a names; mapfile -t names < <(mnames)
     [ "${#names[@]}" -eq 0 ] && return 1
     if [ "${#names[@]}" -eq 1 ]; then printf '%s' "${names[0]}"; return 0; fi
-    local s; s=$(mlist | menu "  Монитор > " "  Выбери монитор") || return 1
+    local s; s=$(mlist | menu "  Монитор > " "$HDR") || return 1
     [ -n "$s" ] && printf '%s' "$s" | cut -f1
 }
 
-# ── 15-second confirmation with auto-revert ──────────────────────────────────
+# -- 15-second confirmation with auto-revert ----------------------------------
 confirm_keep() {
     local s=15 k
     # Read keys from the controlling terminal directly: when the script is
@@ -172,7 +174,7 @@ apply_with_confirm() {
         read -r cw ch _ < <(minfo "$mon")
         if [ "$cw" != "$ew" ] || [ "$ch" != "$eh" ]; then
             apply "$prev"; refresh_json
-            notify "✗ Режим не применился — откат${delp:+ • пресет «$delp» удалён}"
+            notify "Режим не применился — откат${delp:+; пресет «$delp» удалён}"
             [ -n "$delp" ] && preset_del "$delp"
             return 1
         fi
@@ -182,14 +184,15 @@ apply_with_confirm() {
     [ -s "$THUMB_FILE" ] && cat "$THUMB_FILE" >/dev/tty
     printf '\n  \033[1mПрименено:\033[0m %s\n\n' "$newargs" >/dev/tty
     if confirm_keep; then
-        notify "✓ Применено: $newargs"; return 0
+        make_permanent "$newargs"          # persist -> survives reboot + reload
+        notify "Применено и сохранено: $newargs"; return 0
     fi
     apply "$prev"; refresh_json
-    notify "⟲ Откат — настройки не подтверждены"   # user declined → preset kept
+    notify "Откат — настройки не подтверждены"   # user declined -> preset kept
     return 1
 }
 
-# ── overclock ────────────────────────────────────────────────────────────────
+# -- overclock ----------------------------------------------------------------
 # Self-contained CVT reduced-blanking (v1) modeline generator — no external deps.
 # Echoes "pixelclock hdisp hss hse htot vdisp vss vse vtot +hsync -vsync".
 gen_modeline() { # w h hz
@@ -228,16 +231,16 @@ oc_apply() { # mon w h hz x y scale  [preset-to-delete-on-fail]
     apply_with_confirm "$(oc_args "$mon" "$w" "$h" "$hz" "$x" "$y" "$scale")" "${w}x${h}" "$delp"
 }
 
-# auto-tuner: try highest→lowest, first that physically applies AND is confirmed wins
+# auto-tuner: try highest->lowest, first that physically applies AND is confirmed wins
 gen_overclock() {
     local mon="$1" w h hz x y scale tr dis t
     read -r w h hz x y scale tr dis < <(minfo "$mon")
-    notify "⚡ Авто-разгон $mon: пробую от $((hz+30)) Hz вниз"
+    notify "Авто-разгон $mon: пробую от $((hz+30)) Hz вниз"
     for t in $((hz+30)) $((hz+20)) $((hz+15)) $((hz+10)) $((hz+5)); do
-        printf '\033[2J\033[H\n  ⚡ Пробую %s @ %s Hz ...\n' "${w}x${h}" "$t"
+        printf '\033[2J\033[H\n  Пробую %s @ %s Hz ...\n' "${w}x${h}" "$t" >/dev/tty
         if oc_apply "$mon" "$w" "$h" "$t" "$x" "$y" "$scale"; then
             preset_save "OC ${w}x${h}@${t}" "$(oc_args "$mon" "$w" "$h" "$t" "$x" "$y" "$scale")"
-            notify "✓ Оптимум: $t Hz · пресет «OC ${w}x${h}@${t}» сохранён"
+            notify "Оптимум: $t Hz; пресет «OC ${w}x${h}@${t}» сохранён"
             return 0
         fi
     done
@@ -250,15 +253,15 @@ overclock_menu() {
         refresh_json
         read -r w h hz x y scale tr dis < <(minfo "$mon")
         sel=$(printf '%s\n' \
-            "↩  Назад" \
-            "⚡  Авто-разгон (подобрать оптимум)" \
-            "🎯  Выбрать частоту вручную" \
-            "✏  Своя modeline (CVT)" \
-            "💾  Сохранить текущий режим в пресет" \
-            | menu "  ⚡ Разгон $mon · ${w}x${h}@${hz}Hz > " "  15 с на подтверждение, иначе откат")
+            "Назад" \
+            "Авто-разгон (подобрать оптимум)" \
+            "Выбрать частоту вручную" \
+            "Своя modeline" \
+            "Сохранить текущий режим в пресет" \
+            | menu "  Разгон $mon · ${w}x${h}@${hz}Hz > " "$HDR")
         case "$sel" in
-            *Назад|"") return ;;
-            *Авто*)   gen_overclock "$mon" ;;
+            Назад|"") return ;;
+            Авто*)   gen_overclock "$mon" ;;
             *вручную*)
                 target=$(for t in $((hz+5)) $((hz+10)) $((hz+15)) $((hz+20)) $((hz+30)) $((hz+45)); do
                             echo "$t Hz"; done | menu "  Частота > " "  Цель (текущая ${hz} Hz)")
@@ -275,7 +278,7 @@ overclock_menu() {
     done
 }
 
-# ── presets (CRUD) ───────────────────────────────────────────────────────────
+# -- presets (CRUD) -----------------------------------------------------------
 ensure_presets() {
     [ -f "$PRESET_FILE" ] && return
     mkdir -p "${PRESET_FILE%/*}"
@@ -321,39 +324,39 @@ edit_preset() {
     newhz=$(ask "Новая частота для «$name» (Гц), сейчас на $mon ${hz}: ")
     [ -z "$newhz" ] && return
     preset_save "$name" "$(oc_args "$mon" "$w" "$h" "$newhz" "$x" "$y" "$scale")"
-    notify "Пресет «$name» обновлён → ${newhz}Hz"
+    notify "Пресет «$name» обновлён -> ${newhz}Hz"
 }
 
 presets_menu() {
     local sel name args act nm mon
     while :; do
         refresh_json
-        sel=$( { printf '%s\n' "↩  Назад" "➕  Создать из текущего режима" "──────────"; \
-                 preset_lines | sed 's/\t/   →   /'; } \
-               | menu "  💾 Пресеты > " "  Enter — действия | Esc — назад")
+        sel=$( { printf '%s\n' "Назад" "Создать из текущего режима" "----------"; \
+                 preset_lines | sed 's/\t/   ->   /'; } \
+               | menu "  Пресеты > " "$HDR")
         case "$sel" in
-            *Назад|""|*"────"*) return ;;
+            Назад|""|*"----"*) return ;;
             *Создать*)
                 nm=$(ask "Имя пресета: "); [ -z "$nm" ] && continue
                 mon=$(pick_monitor) || continue
                 preset_save "$nm" "$(current_args "$mon")"; notify "Пресет «$nm» создан" ;;
             *)
-                name="${sel%%   →   *}"
+                name="${sel%%   ->   *}"
                 args=$(preset_get "$name")
                 [ -z "$args" ] && continue
-                act=$(printf '%s\n' "▶  Применить" "✏  Изменить частоту" "📌  Сделать постоянным (monitors.conf)" "🗑  Удалить" "↩  Назад" \
+                act=$(printf '%s\n' "Применить" "Изменить частоту" "Сделать постоянным" "Удалить" "Назад" \
                       | menu "  $name > " "  $args")
                 case "$act" in
-                    *Применить*) apply_with_confirm "$args" "" "$name" ;;
+                    Применить) apply_with_confirm "$args" "" "$name" ;;
                     *Изменить*)  edit_preset "$name" ;;
                     *постоянным*) make_permanent "$args" && notify "«$name» записан в monitors.conf" ;;
-                    *Удалить*)   preset_del "$name"; notify "Пресет «$name» удалён" ;;
+                    Удалить)   preset_del "$name"; notify "Пресет «$name» удалён" ;;
                 esac ;;
         esac
     done
 }
 
-# ── CS2 / custom resolutions ─────────────────────────────────────────────────
+# -- CS2 / custom resolutions -------------------------------------------------
 cs2_menu() {
     local mon w h hz x y scale tr dis sel r cw ch s nm
     mon=$(pick_monitor) || return
@@ -361,19 +364,19 @@ cs2_menu() {
         refresh_json
         read -r w h hz x y scale tr dis < <(minfo "$mon")
         sel=$(printf '%s\n' \
-            "↩  Назад" \
-            "1280x960    4:3  · классика CS2" \
-            "1440x1080   4:3  · чёткий стретч" \
-            "1024x768    4:3  · лёгкий" \
+            "Назад" \
+            "1280x960    4:3  классика CS2" \
+            "1440x1080   4:3  чёткий стретч" \
+            "1024x768    4:3  лёгкий" \
             "1280x1024   5:4" \
-            "1176x664    16:9 · low" \
-            "1280x720    16:9 · 720p" \
-            "1080x1080   1:1  · square" \
-            "↺  Вернуть родное ${w}x${h}" \
-            | menu "  🎮 CS2 разрешения · $mon > " "  Применяется с откатом 15 с")
+            "1176x664    16:9 low" \
+            "1280x720    16:9 720p" \
+            "1080x1080   1:1  square" \
+            "Вернуть родное ${w}x${h}" \
+            | menu "  CS2 разрешения · $mon > " "$HDR")
         case "$sel" in
-            *Назад|"") return ;;
-            "↺"*) apply_with_confirm "$mon,${w}x${h}@${hz},${x}x${y},$scale" ;;
+            Назад|"") return ;;
+            Вернуть*) apply_with_confirm "$mon,${w}x${h}@${hz},${x}x${y},$scale" ;;
             [0-9]*)
                 r="${sel%% *}"; cw="${r%x*}"; ch="${r#*x}"
                 if apply_with_confirm "$mon,${r}@${hz},${x}x${y},$scale" "${cw}x${ch}"; then
@@ -386,46 +389,44 @@ cs2_menu() {
     done
 }
 
-# ── per-monitor fine settings ────────────────────────────────────────────────
+# -- per-monitor fine settings ------------------------------------------------
 configure_monitor() {
-    local mon="$1" sel pos scale mode s r t target
+    local mon="$1" sel pos scale mode s r t target x y
     while :; do
         refresh_json
         read -r _ _ _ x y scale _ _ < <(minfo "$mon")
         pos="${x}x${y}"
         sel=$(printf '%s\n' \
-            "↩  Назад" \
-            "⚡  Разгон" \
-            "🖥  Разрешение и частота" \
-            "🔍  Масштаб (x$scale)" \
-            "🔄  Поворот" \
-            "🪞  Зеркалить с другого монитора" \
-            "📌  Текущий режим → постоянный" \
-            "⏻  Выключить монитор" \
-            | menu "  ⚙ $mon > " "  Enter — выбрать | Esc — назад")
+            "Назад" \
+            "Разгон" \
+            "Разрешение и частота" \
+            "Масштаб (x$scale)" \
+            "Поворот" \
+            "Зеркалить с другого монитора" \
+            "Выключить монитор" \
+            | menu "  $mon > " "$HDR")
         case "$sel" in
-            *Назад|"") return ;;
-            *Разгон*) overclock_menu "$mon" ;;
+            Назад|"") return ;;
+            Разгон) overclock_menu "$mon" ;;
             *Разрешение*)
                 mode=$(mmodes "$mon" | menu "  Режим > " "  Разрешение@частота")
                 [ -n "$mode" ] && apply_with_confirm "$mon,$mode,$pos,$scale" "${mode%@*}" ;;
             *Масштаб*)
                 s=$(printf '%s\n' 1 1.25 1.5 1.75 2 2.5 | menu "  Scale > " "  Множитель")
                 [ -n "$s" ] && apply_with_confirm "$mon,preferred,$pos,$s" ;;
-            *Поворот*)
-                r=$(printf '%s\n' "0°  норма" "90°" "180°" "270°" | menu "  Поворот > " "  Ориентация")
+            Поворот)
+                r=$(printf '%s\n' "0 норма" "90" "180" "270" | menu "  Поворот > " "  Ориентация (градусы)")
                 case "$r" in 0*) t=0;; 90*) t=1;; 180*) t=2;; 270*) t=3;; *) t="";; esac
                 [ -n "$t" ] && apply_with_confirm "$mon,preferred,$pos,$scale,transform,$t" ;;
             *Зеркалить*)
                 target=$(mnames | grep -vx "$mon" | menu "  Источник > " "  Зеркалить ИЗ монитора")
                 [ -n "$target" ] && apply_with_confirm "$mon,preferred,auto,$scale,mirror,$target" ;;
-            *постоянный*) make_permanent "$(current_args "$mon")" && notify "$mon записан в monitors.conf" ;;
             *Выключить*) apply "$mon,disable"; notify "$mon выключен"; return ;;
         esac
     done
 }
 
-# ── projection presets (Win+P) ───────────────────────────────────────────────
+# -- projection presets (Win+P) -----------------------------------------------
 projection() {
     local internal n; internal="$(internal_mon)"
     local -a ext; mapfile -t ext < <(mnames | grep -vx "$internal")
@@ -444,35 +445,35 @@ projection() {
     refresh_json
 }
 
-# ── main menu ────────────────────────────────────────────────────────────────
+# -- main menu ----------------------------------------------------------------
 main() {
     local sel mon
     while :; do
         refresh_json
         build_preview
         sel=$( { printf '%s\n' \
-            "⚡  Разгон монитора" \
-            "💾  Пресеты" \
-            "🎮  CS2 / кастомные разрешения" \
-            "🖥  Проекция · только встроенный" \
-            "🖵  Проекция · только внешний" \
-            "🔁  Проекция · дублировать" \
-            "↔  Проекция · расширить" \
-            "↺  Откатить мониторы к monitors.conf" \
-            "──────────────────────────────" ; \
-            mlist | sed 's/^/⚙  /' ; } \
-            | menu_preview "  🖳 Монитор > " "  matugen · Win+P · Esc — выход")
+            "Разгон монитора" \
+            "Пресеты" \
+            "CS2 / кастомные разрешения" \
+            "Проекция: только встроенный" \
+            "Проекция: только внешний" \
+            "Проекция: дублировать" \
+            "Проекция: расширить" \
+            "Откатить мониторы к monitors.conf" \
+            "----------------------------------" ; \
+            mlist | sed 's/^/Настроить: /' ; } \
+            | menu_preview "  Монитор > " "  ↑↓ выбор | Enter выбрать | Esc выход")
         case "$sel" in
-            ""|*"──────"*) exit 0 ;;
-            "⚡  "*) mon=$(pick_monitor) && [ -n "$mon" ] && overclock_menu "$mon" ;;
-            "💾  "*) presets_menu ;;
-            "🎮  "*) cs2_menu ;;
+            ""|*"----"*) exit 0 ;;
+            "Разгон монитора") mon=$(pick_monitor) && [ -n "$mon" ] && overclock_menu "$mon" ;;
+            "Пресеты") presets_menu ;;
+            CS2*) cs2_menu ;;
             *"только встроенный"*) projection internal ;;
             *"только внешний"*)    projection external ;;
             *дублировать*)         projection duplicate ;;
             *расширить*)           projection extend ;;
             *Откатить*)            reset_monitors ;;
-            "⚙  "*) mon=$(printf '%s' "${sel#⚙  }" | cut -f1); configure_monitor "$mon" ;;
+            "Настроить: "*) mon=$(printf '%s' "${sel#Настроить: }" | cut -f1); configure_monitor "$mon" ;;
         esac
     done
 }

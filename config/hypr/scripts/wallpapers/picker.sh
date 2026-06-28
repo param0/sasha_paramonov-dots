@@ -31,8 +31,19 @@ TERM=xterm-256color chafa --size=90x32 --symbols braille --scale max "\$PC" 2>/d
 PVSCRIPT
 chmod +x "$CACHE/preview.sh"
 
-# Always dark picker
-FZF_COLORS="bg:#0a0a0f,bg+:#15151f,fg:#c0caf5,fg+:#ffffff,info:#7aa2f7,prompt:#ffffff,pointer:#bb9af7,hl:#f7768e,hl+:#f7768e"
+# Colours from matugen (~/.cache/quickshell-colors.json), dark fallback otherwise
+FZF_COLORS=$(C="$HOME/.cache/quickshell-colors.json" python3 -c '
+import json,os
+d={}
+try: d=json.load(open(os.environ["C"]))
+except Exception: pass
+g=lambda k,f: d.get(k,f)
+bg=g("background","#0a0a0f"); bg2=g("surfaceContainer","#15151f")
+fg=g("text","#c0caf5"); pri=g("primary","#7aa2f7"); sec=g("secondary","#bb9af7")
+err=g("error","#f7768e"); sub=g("subtext","#9aa5ce")
+print(f"bg:{bg},bg+:{bg2},fg:{fg},fg+:#ffffff,info:{pri},prompt:{pri},"
+      f"pointer:{sec},marker:{sec},hl:{err},hl+:{err},header:{sub},border:{pri}")' 2>/dev/null)
+[ -n "$FZF_COLORS" ] || FZF_COLORS="bg:#0a0a0f,bg+:#15151f,fg:#c0caf5,fg+:#ffffff,info:#7aa2f7,prompt:#ffffff,pointer:#bb9af7,hl:#f7768e,hl+:#f7768e"
 
 SEL=$(cat "$TMP" | fzf \
     --prompt="  Wallpaper > " \
