@@ -46,13 +46,20 @@ PKGS=(
     network-manager-applet dunst
 )
 
+# Базовые сервисы сессии — нужны для звука (PipeWire/XDG_RUNTIME_DIR),
+# порталов (dbus → захват экрана в OBS) и сети/блютуза.
+PKGS+=(dbus elogind)
+
 # Определяем init system
+RUNIT_SVC_PKGS=()
 if command -v systemctl &>/dev/null; then
     INIT_SYSTEM="systemd"
     PKGS+=(sddm)
 elif command -v runit-init &>/dev/null || [ -d /run/runit ]; then
     INIT_SYSTEM="runit"
     PKGS+=(sddm-runit)
+    # runit-обвязки сервисов ставим best-effort (имена могут отличаться)
+    RUNIT_SVC_PKGS=(dbus-runit elogind-runit bluez-runit networkmanager-runit)
 else
     INIT_SYSTEM="systemd"
     PKGS+=(sddm)
@@ -83,6 +90,23 @@ install_pkgs() {
     echo "Устанавливаю пакеты..."
     sudo pacman -S --needed --noconfirm "${PKGS[@]}"
     yay -S --needed --noconfirm "${AUR_PKGS[@]}"
+    # runit-сервисы — не валим установку, если какого-то пакета нет в репо
+    if [[ ${#RUNIT_SVC_PKGS[@]} -gt 0 ]]; then
+        sudo pacman -S --needed --noconfirm "${RUNIT_SVC_PKGS[@]}" 2>/dev/null || true
+    fi
+}
+
+# Включить сервис runit (Artix): /etc/runit/sv/<svc> или /etc/sv/<svc>.
+# Гвардим существование — несуществующие сервисы тихо пропускаем.
+runit_enable() {
+    local svc="$1" src
+    for src in "/etc/runit/sv/$svc" "/etc/sv/$svc"; do
+        if [[ -d "$src" ]]; then
+            sudo ln -sf "$src" /etc/runit/runsvdir/default/ 2>/dev/null
+            sudo ln -sf "$src" /run/runit/service/ 2>/dev/null
+            return 0
+        fi
+    done
 }
 
 apply_dots() {
@@ -151,11 +175,17 @@ QTEOF
         bash ~/.config/hypr/scripts/wallpapers/set.sh "$WALL" 2>/dev/null
     fi
 
-    # Включаем sddm
+    # Включаем сервисы: dbus/elogind (звук+порталы), сеть, блютуз, sddm.
+    # dbus и elogind/XDG_RUNTIME_DIR — то, из-за чего на runit «слетал» звук
+    # и не работал захват экрана в OBS.
     if [[ "$INIT_SYSTEM" == "systemd" ]]; then
-        sudo systemctl enable sddm 2>/dev/null
+        for s in dbus NetworkManager bluetooth sddm; do
+            sudo systemctl enable "$s" 2>/dev/null
+        done
     else
-        sudo ln -sf /etc/sv/sddm /var/run/service/ 2>/dev/null
+        for s in dbus elogind NetworkManager bluetoothd sddm; do
+            runit_enable "$s"
+        done
     fi
 
     echo "$DOTS_VERSION" > "$DOTS_VER_FILE"
