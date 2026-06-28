@@ -39,3 +39,8 @@ output_path = '~/.config/fastfetch/config.jsonc'
 [templates.keyboard]
 input_path = '~/.config/matugen/templates/keyboard-colors-rgb'
 output_path = '~/.config/keyboard/matugen-colors-rgb'
+
+[templates.btop]
+input_path = '~/.config/matugen/templates/btop.theme'
+output_path = '~/.config/btop/themes/matugen.theme'
+post_hook = 'pkill -USR2 btop || true'
