@@ -141,6 +141,10 @@ confirm_keep() {
     # launched via `alacritty -e`, stdin may be at EOF, which makes `read -t`
     # return instantly and burn the whole countdown in milliseconds.
     exec 3</dev/tty 2>/dev/null || { command -v tput >/dev/null 2>&1 && tput cnorm 2>/dev/null; return 1; }
+    # Drain buffered input first — the Enter used to pick the fzf item is still
+    # in the terminal buffer and would otherwise be eaten by the first read,
+    # instantly "keeping" with no visible countdown.
+    while read -rsn1 -t 0.05 -u 3 _; do :; done
     command -v tput >/dev/null 2>&1 && tput civis >/dev/tty 2>/dev/null
     while [ "$s" -gt 0 ]; do
         printf '\r\033[K  \033[1mОставить настройки?\033[0m  [Enter] оставить · [любая клавиша] откат   откат через %2d с ' "$s" >/dev/tty
