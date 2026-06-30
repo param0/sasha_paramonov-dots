@@ -36,7 +36,7 @@ PKGS=(
     swaybg awww mako
     hyprshot cliphist wl-clipboard grim slurp wtype
     pipewire pipewire-pulse pipewire-alsa wireplumber
-    pamixer pavucontrol brightnessctl playerctl
+    alsa-utils pamixer pavucontrol brightnessctl playerctl
     bluez bluez-utils
     fastfetch btop fzf chafa imagemagick micro rsync
     zsh zsh-autosuggestions zsh-syntax-highlighting ncurses
