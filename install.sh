@@ -37,6 +37,7 @@ PKGS=(
     hyprshot cliphist wl-clipboard grim slurp wtype
     pipewire pipewire-pulse pipewire-alsa wireplumber
     pamixer pavucontrol brightnessctl playerctl
+    bluez bluez-utils
     fastfetch btop fzf chafa imagemagick micro rsync
     zsh zsh-autosuggestions zsh-syntax-highlighting ncurses
     ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols noto-fonts noto-fonts-emoji
@@ -73,6 +74,7 @@ AUR_PKGS=(
     quickshell-git
     grimblast-git
     hyprpicker
+    bluetui
 )
 
 # ── Функции ──
@@ -167,10 +169,6 @@ QTEOF
         [[ -f "$RC" ]] || continue
         grep -q "QT_QPA_PLATFORMTHEME" "$RC" 2>/dev/null || \
             printf '\nexport QT_QPA_PLATFORMTHEME=qt6ct\nexport QT_STYLE_OVERRIDE=kvantum-dark\nexport XDG_SESSION_TYPE=wayland\nexport XDG_CURRENT_DESKTOP=Hyprland\n' >> "$RC"
-        # XDG_RUNTIME_DIR в шелле = тот же сокет, что у PipeWire → wpctl/звук
-        # видят сервер, не "Could not connect to PipeWire".
-        grep -q "XDG_RUNTIME_DIR" "$RC" 2>/dev/null || \
-            printf 'export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"\n' >> "$RC"
     done
 
     # Генерируем matugen цвета из текущих обоев
@@ -228,15 +226,6 @@ copy_configs() {
     find ~/.config/hypr/scripts -type f -name "*.sh" 2>/dev/null -exec chmod +x {} \;
     find ~/.config/hypr/scripts -type f -name "*.py" 2>/dev/null -exec chmod +x {} \;
     chmod +x ~/.config/hypr/start-portals.sh 2>/dev/null
-
-    # Фикс звука/OBS после перезагрузки: гарантируем общий XDG_RUNTIME_DIR в
-    # шелле (тот же сокет, что у PipeWire). Сам автозапуск PipeWire+порталов
-    # уже в скопированном ~/.config/hypr/start-portals.sh.
-    for RC in ~/.bash_profile ~/.zshrc; do
-        [[ -f "$RC" ]] || continue
-        grep -q "XDG_RUNTIME_DIR" "$RC" 2>/dev/null || \
-            printf 'export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"\n' >> "$RC"
-    done
 
     echo "Конфиги перенесены."
 }
